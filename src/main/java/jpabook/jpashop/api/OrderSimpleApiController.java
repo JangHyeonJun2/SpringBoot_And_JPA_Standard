@@ -34,12 +34,24 @@ public class OrderSimpleApiController {
 
     @GetMapping("/api/v2/simple-orders")
     public List<SimpleOrderDto> orderV2() {
+        //ORDER 2개
+        //N + 1 -> 1 + 회원 N + 배송 N
         List<Order> orders = orderRepository.findAllByString(new OrderSearch());
         List<SimpleOrderDto> collect = orders.stream()
                 .map(order -> new SimpleOrderDto(order))
                 .collect(Collectors.toList());
         return collect;
     }
+
+    @GetMapping("/api/v3/simple-orders")
+    public List<SimpleOrderDto> orderV3() {
+        List<Order> orders = orderRepository.findAllWithMemberDelivery();
+        List<SimpleOrderDto> collect = orders.stream()
+                .map(order -> new SimpleOrderDto(order))
+                .collect(Collectors.toList());
+        return collect;
+    }
+
 
     @Data
     static class SimpleOrderDto {
