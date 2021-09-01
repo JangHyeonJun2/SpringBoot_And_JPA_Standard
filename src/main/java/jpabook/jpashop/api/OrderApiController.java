@@ -6,6 +6,8 @@ import jpabook.jpashop.domain.OrderItem;
 import jpabook.jpashop.domain.OrderStatus;
 import jpabook.jpashop.repository.OrderRepository;
 import jpabook.jpashop.repository.OrderSearch;
+import jpabook.jpashop.repository.order.query.OrderFlatDto;
+import jpabook.jpashop.repository.order.query.OrderItemQueryDto;
 import jpabook.jpashop.repository.order.query.OrderQueryDto;
 import jpabook.jpashop.repository.order.query.OrderQueryRepository;
 import lombok.Data;
@@ -76,6 +78,24 @@ public class OrderApiController {
     @GetMapping("/api/v5/orders")
     public List<OrderQueryDto> ordersV5() {
         return orderQueryRepository.findAllByDto_optimization();
+    }
+
+    /**
+     * Query : 1번
+     * 단점
+     *  - 쿼리는 한번이지만 조인으로 인해 DB에서 애플리케이션에 전달하는 데이터에 중복 데이터가 추가되므로 상황에 따라 V5보다 더 느릴 수 도 있다.
+     *  - 애플리케이션에서 추가 작업이 크다
+     *  - ** 페이징 불가능 (너무 큼)
+     */
+    @GetMapping("/api/v6/orders")
+    public List<OrderQueryDto> ordersV6() {
+        List<OrderFlatDto> flats = orderQueryRepository.findAllByDto_flat();
+
+        return flats.stream()
+                .collect(Collectors.groupingBy(orderFlatDto -> new OrderQueryDto(orderFlatDto.getOrderId(), orderFlatDto.getName(), orderFlatDto.getOrderDate(), orderFlatDto.getOrderStatus(), orderFlatDto.getAddress()),Collectors.mapping(orderFlatDto -> new OrderItemQueryDto(orderFlatDto.getOrderId(), orderFlatDto.getItemName(), orderFlatDto.getOrderPrice(), orderFlatDto.getCount()), Collectors.toList())))
+                .entrySet()
+                .stream()
+                .map(orderQueryDtoListEntry -> new OrderQueryDto(orderQueryDtoListEntry.getKey().getOrderId(), orderQueryDtoListEntry.getKey().getName(), orderQueryDtoListEntry.getKey().getOrderDate(), orderQueryDtoListEntry.getKey().getOrderStatus(), orderQueryDtoListEntry.getKey().getAddress(), orderQueryDtoListEntry.getValue())).collect(Collectors.toList());
     }
 
 
